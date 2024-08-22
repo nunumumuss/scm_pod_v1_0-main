@@ -1,3 +1,12 @@
+import 'package:fec_corp_app/constants/constants.dart'; 
+import 'package:fec_corp_app/services/auth_service.dart';
+import 'package:fec_corp_app/providers/account_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:grouped_list/grouped_list.dart';
+import 'package:provider/provider.dart';
 import 'package:fec_corp_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:location/location.dart' as l;
@@ -5,6 +14,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; 
+
+// Define a global variable for user_carlicense
+String user_carlicense = '';
 
 class CheckinScreen extends StatefulWidget {
   const CheckinScreen({super.key});
@@ -19,221 +31,214 @@ class _CheckinScreenState extends State<CheckinScreen> {
   bool permissionGranted = false;
   l.Location location = l.Location();
   l.LocationData? locationData;
-  String data1 = ''; // น้อยกว่า 10 km
-  String data2 = ''; // มากกว่า 10 km
-  List<dynamic> checkinData = [];
+  List<dynamic> deliveryReport = [];
+  bool isLoading = false;
+  String? error;
 
-  Future<List<dynamic>> getData() async {
-    
-    var res = await http.get(Uri.parse('https://api.codingthailand.com/api/fec-corp/checkin?car_license=กท1'));
-    
-    // print(res.body);
+  Future<void> getData(String carLicense) async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      final locationData = await location.getLocation();
+      double lat = locationData.latitude ?? 0.0; // Default to 0.0 if latitude is null
+      double long = locationData.longitude ?? 0.0; // Default to 0.0 if latitude is null
+      
+      // Format the latitude to 5 decimal places
+      String str_lat = lat.toStringAsFixed(5);
+      String str_long = long.toStringAsFixed(5);
 
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodCheckin}?car_license=${carLicense}&latitude=${str_lat}&longitude=${str_long}'; 
+      print(apiUri);
+      final res = await http.get(Uri.parse(apiUri));
 
-    if (res.statusCode == 200) {
-      List<dynamic> data = json.decode(res.body);
-      return data;
-    } else {
-      // 400 404 401 500
-      throw Exception('เกิดข้อผิดพลาดจาก Server โปรดลองใหม่');
+      if (res.statusCode == 200) {
+        Map<String, dynamic> jsonData = jsonDecode(res.body);
+        List<Map<String, dynamic>> resData = List<Map<String, dynamic>>.from(jsonData['results']);
+        setState(() {
+          deliveryReport = resData;
+        });
+      } else if (res.statusCode == 404) {
+        setState(() {
+          error = "ไม่มีข้อมูล";
+        });
+      } else {
+        setState(() {
+          error = "เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  @override
-  void initState() {
-    checkStatus();
-    super.initState();
-  }
- 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Check In' ),
-        backgroundColor: Colors.red.shade400,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Wrap(
-              children: [
-                // ElevatedButton(
-                //     onPressed: () {
-                //       requestEnableGps();
-                //     },
-                //     child: gpsEnabled
-                //         ? const Text('GPS เปิดแล้ว!')
-                //         : const Text('เปิดใช้งาน GPS')),
-                // ElevatedButton(
-                //     onPressed: () {
-                //       requestLocationPermission();
-                //     },
-                //     child: permissionGranted
-                //         ? const Text('ขอ Permission แล้ว!')
-                //         : const Text('ขอสิทธิ์ Location')),
-                ElevatedButton(
-                    onPressed: () async {
-                      final locationData = await location.getLocation();
-                      // print('Lat: ${locationData.latitude} Long: ${locationData.longitude}');
+  Future<void> postCfCheckin(String carLicense) async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-                      final data = await getData();
-                      findClosestLocation(data, locationData.latitude!,
-                          locationData.longitude!);
-                    },
-                    child: const Text('ตรวจสอบการ Check In')),
-              ],
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodLoaded}?car_license=${carLicense}';
+      final res = await http.post(Uri.parse(apiUri));
+
+      if (res.statusCode == 200) {
+        Map<String, dynamic> responseData = jsonDecode(res.body);
+        // Show a dialog with the success message and a button to confirm
+        _showConfirmationDialog(responseData['message']);
+      } else if (res.statusCode == 404) {
+        setState(() {
+          error = "ไม่มีข้อมูลที่ยืนยัน Check In";
+        });
+      } else {
+        setState(() {
+          error = "เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showConfirmationDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('ผลการดำเนินการ'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.offAllNamed('/home'); // Clear stack and go to home
+              },
+              child: const Text('ฺBack to home'),
             ),
-          ),
-          const Divider(),
-          data1.isNotEmpty
-              ? Expanded(
-                  flex: 5,
-                  child: Column(
-                    children: [
-                      Text(data1),
-                      const Divider(),
-                      ListView.separated(
-                          scrollDirection: Axis.vertical,
-                          shrinkWrap: true,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              leading: Text('${checkinData[index]['ship_count']} ที่'),
-                              title: Text('ปลายทาง: ${checkinData[index]['province']}'),
-                              subtitle: Text(
-                                  'Lat: ${checkinData[index]['letitude']} Long: ${checkinData[index]['longitude']}'),
-                              trailing:
-                                  Text('ต้นทาง: ${checkinData[index]['ship_point']}'),
-                            );
-                          },
-                          separatorBuilder: (context, index) => const Divider(),
-                          itemCount: checkinData.length
-                      ),
-                      const SizedBox(height: 20),
-                      MaterialButton(
-                        onPressed: () {},
-                        color: Colors.red.shade700,
-                        textColor: Colors.white,
-                        height: 60,
-                        padding: const EdgeInsets.all(20.0),
-                        child: const Text('Check In'),
-                      ),
-                    ],
-                  ))
-              : Expanded(flex: 5, child: Text(data2)),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
-  void checkStatus() async {
-    bool gpsEnabled = await Permission.location.serviceStatus.isEnabled;
-    bool permissionGranted = await Permission.locationWhenInUse.isGranted;
-    setState(() {
-      gpsEnabled = gpsEnabled;
-      permissionGranted = permissionGranted;
-    });
+  @override
+  void initState() {     
+    super.initState();
+    final accountProvider = Provider.of<AccountProvider>(context, listen: false);
+    user_carlicense = accountProvider.account!.carLicense; 
+    getData(user_carlicense);  
   }
 
-  void requestEnableGps() async {
-    if (gpsEnabled) {
-      print('Gps เปิดอยู่');
-    } else {
-      bool isGpsActive = await location.requestService();
-      if (!isGpsActive) {
-        setState(() {
-          gpsEnabled = false;
-        });
-        print('ผู้ใช้ไม่ได้เปิด GPS');
-      } else {
-        print('เปิดใช้ permission gps ให้กับผู้ใช้');
-        setState(() {
-          gpsEnabled = true;
-        });
-      }
-    }
-  }
-
-  void requestLocationPermission() async {
-    var permissionStatus = await Permission.locationWhenInUse.request();
-    if (permissionStatus.isGranted) {
-      setState(() {
-        permissionGranted = true;
-      });
-    } else {
-      setState(() {
-        permissionGranted = false;
-      });
-    }
-  }
-
-// หาระยะทาง (km) ระหว่างจุดสองจุด
-  double calculateDistance(double startLatitude, double startLongitude,
-      double endLatitude, double endLongitude) {
-    const double earthRadiusKm = 6371.0; // Radius of the Earth in kilometers
-
-    double startLatitudeRad = startLatitude * (pi / 180);
-    double startLongitudeRad = startLongitude * (pi / 180);
-    double endLatitudeRad = endLatitude * (pi / 180);
-    double endLongitudeRad = endLongitude * (pi / 180);
-
-    double dLat = endLatitudeRad - startLatitudeRad;
-    double dLon = endLongitudeRad - startLongitudeRad;
-
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(startLatitudeRad) *
-            cos(endLatitudeRad) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-
-    double distance = earthRadiusKm * c;
-
-    return distance; // Distance in kilometers
-  }
-
-// หากจังหวัดที่ใกล้ที่สุด เทียบกับพิกัดรถ
-  void findClosestLocation(
-      List<dynamic> data, double userLatitude, double userLongitude) {
-    double closestDistance = double.infinity;
-    Map<String, dynamic>? closestLocation;
-
-    for (var location in data) {
-      double locationLatitude = double.parse(location['letitude']);
-      double locationLongitude = double.parse(location['longitude']);
-
-      double distance = calculateDistance(
-          userLatitude, userLongitude, locationLatitude, locationLongitude);
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestLocation = location;
-      }
+  @override
+  Widget build(BuildContext context) {
+    if (error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Check In'),
+          backgroundColor: Colors.red.shade400,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(' $error'),
+              ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                }, 
+                child: const Text('Back to home'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    if (closestLocation != null) {
-      // print(
-      //     'กำลังเดินทางจาก: ${closestLocation['ship_point']} ไปยัง ${closestLocation['province']}');
-      // print(
-      //     'เหลือระยะทางประมาณ: ${closestDistance.toStringAsFixed(2)} กิโลเมตรก่อนถึงปลายทาง');
-      if (closestDistance <= 10) {
-        data1 = "";
-        setState(() {
-          checkinData = data;
-          data2 = "";
-          data1 =
-              "กำลังเดินทางจาก: ${closestLocation!['ship_point']} ไปยัง ${closestLocation['province']} เหลือระยะทางประมาณ: ${closestDistance.toStringAsFixed(2)} กิโลเมตรก่อนถึงปลายทาง เช็คอินได้แล้ว!";
-        });
-      } else {
-        data2 = "";
-        setState(() {
-          data1 = "";
-          data2 =
-              "กำลังเดินทางจาก: ${closestLocation!['ship_point']} ไปยัง ${closestLocation['province']} เหลือระยะทางประมาณ: ${closestDistance.toStringAsFixed(2)} กิโลเมตรก่อนถึงปลายทาง ยัง checkin ไม่ได้";
-        });
-      }
-    } else {
-      print('No locations found.');
-    }
+    return Scaffold(
+      appBar: AppBar(
+        title: deliveryReport.isEmpty 
+          ? const Text('Check In') 
+          : Text('Check In ${deliveryReport.length} รายการ'),
+        backgroundColor: Colors.red.shade400,
+      ),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : deliveryReport.isNotEmpty && deliveryReport.any((element) => element.containsKey('site')) 
+            ? GroupedListView<dynamic, String>(
+                elements: deliveryReport,
+                groupBy: (element) => element['site'],
+                groupSeparatorBuilder: (String groupByValue) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'คลังสินค้า: $groupByValue', 
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                itemBuilder: (context, dynamic element) => Card(
+                  elevation: 8.0,
+                  margin: const EdgeInsets.all(5.0),
+                  child: ListTile(
+                    leading: const Icon(Icons.newspaper),
+                    title: Text('ระยะห่างระหว่างคลังสินค้า : ${element['distance']}'),  
+                  ), 
+                ),
+                useStickyGroupSeparators: true,
+                order: GroupedListOrder.DESC,
+              )
+            : GroupedListView<dynamic, String>(
+                elements: deliveryReport,
+                groupBy: (element) => element['ship_point'],
+                groupSeparatorBuilder: (String groupByValue) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'คลังสินค้า: $groupByValue', 
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                itemBuilder: (context, dynamic element) => Card(
+                  elevation: 8.0,
+                  margin: const EdgeInsets.all(5.0),
+                  child: ListTile(
+                    leading: const Icon(Icons.newspaper),
+                    title: Text('Shipment No.: ${element['shipid']}'),
+                    trailing: Text('หน้าท่า: ${element['dock_no']}'),
+                    subtitle: Text(element['province']),
+                  ), 
+                ),
+                useStickyGroupSeparators: true,
+                order: GroupedListOrder.DESC,
+              ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Show the button only if there is a site "SW" in deliveryReport
+              if (!deliveryReport.any((element) => element.containsKey('site')))
+                ElevatedButton(
+                  onPressed: () {
+                    postCfCheckin(user_carlicense); // Call the API when the button is pressed
+                  },
+                  child: const Text('ยืนยัน Check In'),
+                ),
+            ],
+          ),
+        ],
+      ),      
+    );
   }
-} // end of class
+}

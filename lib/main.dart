@@ -2,6 +2,7 @@
 import 'package:fec_corp_app/providers/account_provider.dart';
 import 'package:fec_corp_app/screens/about_screen.dart';
 import 'package:fec_corp_app/screens/check_delivery_screen.dart';
+import 'package:fec_corp_app/screens/checkin0_screen.dart';
 import 'package:fec_corp_app/screens/checkin_screen.dart';
 import 'package:fec_corp_app/screens/confirm_screen.dart';
 import 'package:fec_corp_app/screens/fail_screen.dart';
@@ -65,6 +66,7 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/about', page: () => const AboutScreen()),
         GetPage(name: '/check-delivery', page: () => const CheckDeliveryScreen()),
         GetPage(name: '/warehouse', page: () => const WarehouseScreen()),
+        GetPage(name: '/checkin0', page: () => const Checkin0Screen()),
         GetPage(name: '/checkin', page: () => const CheckinScreen()),
         GetPage(name: '/picked', page: () => const PickedScreen()),
         GetPage(name: '/loaded', page: () => const LoadedScreen()),
