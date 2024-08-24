@@ -63,8 +63,9 @@ class _WarehouseScreenState extends State<WarehouseScreen> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     leading: const Icon(Icons.business),
-                    title: Text('${snapshot.data![index]['desc']}'),
-                    subtitle: Text('Lat: ${snapshot.data![index]['latitude']} Long: ${snapshot.data![index]['longitude']}'),
+                    title: Text('${snapshot.data![index]['desct']}'),
+                    subtitle: Text('Tel: ${snapshot.data![index]['tel']}'),
+                    // subtitle: Text('Location:${snapshot.data![index]['latitude']} , ${snapshot.data![index]['longitude']}'),
                     trailing: Text('${snapshot.data![index]['site']}'),
                   );
                 }, 

@@ -2,13 +2,13 @@ class Constants {
   // static const String apiServer = 'http://192.168.1.105:8000/';
   static const String apiServer = 'http://180.128.9.83:8000/';
   // API Endpoints
-  static const String ApiPodCheckin     = 'pod_checkin';
-  static const String ApiPodWarehouse   = 'pod_warehouse';
-  static const String ApiPodPicked      = 'pod_picked';
-  static const String ApiPodLoaded      = 'pod_loaded';
-  static const String ApiPodCfDelivery  = 'pod_cfdelivery';
-  static const String ApiPodRvDelivery  = 'pod_rvdelivery';
-  static const String ApiPodDeliveryLog = 'pod_deliverylog'; 
+  static const String ApiPodCheckin     = 'checkin'; 
+  static const String ApiPodWarehouse   = 'warehouse';
+  static const String ApiPodPicked      = 'picked';
+  static const String ApiPodLoaded      = 'loaded';
+  static const String ApiPodCfDelivery  = 'cfdelivery';
+  static const String ApiPodRvDelivery  = 'rvdelivery';
+  static const String ApiPodDeliveryLog = 'deliverylog'; 
 
   // Other constants can be added here
   static const String appName = 'TCE LIMS';

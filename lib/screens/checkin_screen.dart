@@ -7,13 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:provider/provider.dart';
-import 'package:fec_corp_app/services/auth_service.dart';
-import 'package:flutter/material.dart';
 import 'package:location/location.dart' as l;
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:math';
-import 'package:http/http.dart' as http;
-import 'dart:convert'; 
 
 // Define a global variable for user_carlicense
 String user_carlicense = '';
@@ -49,7 +43,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       String str_long = long.toStringAsFixed(5);
 
       String apiUri = '${Constants.apiServer}${Constants.ApiPodCheckin}?car_license=${carLicense}&latitude=${str_lat}&longitude=${str_long}'; 
-      print(apiUri);
+      // print(apiUri);
       final res = await http.get(Uri.parse(apiUri));
 
       if (res.statusCode == 200) {
@@ -69,7 +63,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       }
     } catch (e) {
       setState(() {
-        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
+        error = "เกิดข้อผิดพลาด e โปรดลองใหม่";
       });
     } finally {
       setState(() {
@@ -78,14 +72,26 @@ class _CheckinScreenState extends State<CheckinScreen> {
     }
   }
 
-  Future<void> postCfCheckin(String carLicense) async {
+  Future<void> postCfcheckin(List<String> shipmentIds) async { // Accept a list of shipment IDs
     try {
       setState(() {
         isLoading = true;
       });
 
-      String apiUri = '${Constants.apiServer}${Constants.ApiPodLoaded}?car_license=${carLicense}';
-      final res = await http.post(Uri.parse(apiUri));
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodCheckin}'; // Make sure to include the correct base URL
+
+      // Prepare the request body as a JSON array
+      String body = jsonEncode(shipmentIds); // Directly encode the list of strings
+    
+      // Send the POST request
+      final res  = await http.post(
+        Uri.parse(apiUri),
+        headers: {
+          'Content-Type': 'application/json', // Set the content type to JSON
+        },
+        body: body, // Encode the body to JSON
+      );       
+      
 
       if (res.statusCode == 200) {
         Map<String, dynamic> responseData = jsonDecode(res.body);
@@ -102,7 +108,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       }
     } catch (e) {
       setState(() {
-        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
+        error = "เกิดข้อผิดพลาด ${e} โปรดลองใหม่";
       });
     } finally {
       setState(() {
@@ -110,6 +116,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       });
     }
   }
+  
 
   void _showConfirmationDialog(String message) {
     showDialog(
@@ -136,7 +143,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
     super.initState();
     final accountProvider = Provider.of<AccountProvider>(context, listen: false);
     user_carlicense = accountProvider.account!.carLicense; 
-    getData(user_carlicense);  
+    getData(user_carlicense);       
   }
 
   @override
@@ -231,7 +238,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
               if (!deliveryReport.any((element) => element.containsKey('site')))
                 ElevatedButton(
                   onPressed: () {
-                    postCfCheckin(user_carlicense); // Call the API when the button is pressed
+                    List<String> shipmentIds = deliveryReport
+                  .map((element) => element['shipid'] as String) // Map to extract shipid
+                  .toList();
+                  postCfcheckin(shipmentIds); // Call the API when the button is pressed
                   },
                   child: const Text('ยืนยัน Check In'),
                 ),

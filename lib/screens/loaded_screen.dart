@@ -58,15 +58,26 @@ class _LoadedScreenState extends State<LoadedScreen> {
       });
     }
   }
-
-  Future<void> postCfloaded(String carLicense) async {
+  Future<void> postCfloaded(List<String> shipmentIds) async { // Accept a list of shipment IDs
     try {
       setState(() {
         isLoading = true;
       });
 
-      String apiUri = '${Constants.apiServer}${Constants.ApiPodLoaded}?car_license=${carLicense}';
-      final res = await http.post(Uri.parse(apiUri));
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodLoaded}'; // Make sure to include the correct base URL
+
+      // Prepare the request body as a JSON array
+      String body = jsonEncode(shipmentIds); // Directly encode the list of strings
+    
+      // Send the POST request
+      final res  = await http.post(
+        Uri.parse(apiUri),
+        headers: {
+          'Content-Type': 'application/json', // Set the content type to JSON
+        },
+        body: body, // Encode the body to JSON
+      );       
+      
 
       if (res.statusCode == 200) {
         Map<String, dynamic> responseData = jsonDecode(res.body);
@@ -74,7 +85,7 @@ class _LoadedScreenState extends State<LoadedScreen> {
         _showConfirmationDialog(responseData['message']);
       } else if (res.statusCode == 404) {
         setState(() {
-          error = "ไม่มีข้อมูล";
+          error = "ไม่มีข้อมูลที่ยืนยัน Loaded";
         });
       } else {
         setState(() {
@@ -83,7 +94,7 @@ class _LoadedScreenState extends State<LoadedScreen> {
       }
     } catch (e) {
       setState(() {
-        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
+        error = "เกิดข้อผิดพลาด ${e} โปรดลองใหม่";
       });
     } finally {
       setState(() {
@@ -91,6 +102,7 @@ class _LoadedScreenState extends State<LoadedScreen> {
       });
     }
   }
+   
 
   void _showConfirmationDialog(String message) {
     showDialog(
@@ -187,9 +199,12 @@ class _LoadedScreenState extends State<LoadedScreen> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  postCfloaded(user_carlicense); // Call the API when the button is pressed
+                  List<String> shipmentIds = deliveryReport
+                  .map((element) => element['shipid'] as String) // Map to extract shipid
+                  .toList();
+                  postCfloaded(shipmentIds); // Call the API when the button is pressed
                 },
-                child: const Text('ยืนยันขึ้นสินค้าสำเร็จ'),
+                child: const Text('ยืนยันขึ้นสินค้าสำเร็จ.'),
               ),
             ],
           ),

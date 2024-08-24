@@ -26,7 +26,7 @@ class _CheckDeliveryScreenState extends State<CheckDeliveryScreen> {
     });  
 
     String apiUri = Constants.apiServer + Constants.ApiPodDeliveryLog + '?car_license=' + carLicense; 
-
+    print(apiUri);
     final res =  await http.get(Uri.parse(apiUri));  
     // var res = await http.get(       Uri.parse('https://api.codingthailand.com/api/fec-corp/check-delivery?car_license=$carLicense'));
 
@@ -63,6 +63,8 @@ class _CheckDeliveryScreenState extends State<CheckDeliveryScreen> {
     final accountProvider = Provider.of<AccountProvider>(context, listen: false);
     String? carLicense = accountProvider.account?.carLicense; // Safely access account name
     // print (user_name); 
+    String apiUri = '${Constants.apiServer}${Constants.ApiPodDeliveryLog}?car_license=$carLicense'; 
+    print(apiUri);
     getData(carLicense!); // กท1 / กท0
     super.initState();
   }
@@ -116,7 +118,7 @@ class _CheckDeliveryScreenState extends State<CheckDeliveryScreen> {
                margin: const EdgeInsets.all(5.0),
                child: ListTile(
                  leading: const Icon(Icons.newspaper),
-                 title: Text('Do ID: ${element['doid']} Bill: ${element['billno']}'),
+                 title: Text('DO: ${element['doid']} Bill: ${element['billno']}'), 
                  subtitle: Text('${element['cusname']}'),
                  trailing: Text(element['do_stat']),
                ), 
