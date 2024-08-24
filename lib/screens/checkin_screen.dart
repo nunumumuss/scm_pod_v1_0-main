@@ -45,9 +45,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
       String apiUri = '${Constants.apiServer}${Constants.ApiPodCheckin}?car_license=${carLicense}&latitude=${str_lat}&longitude=${str_long}'; 
       // print(apiUri);
       final res = await http.get(Uri.parse(apiUri));
-
+      String resBody = utf8.decode(res.bodyBytes);
       if (res.statusCode == 200) {
-        Map<String, dynamic> jsonData = jsonDecode(res.body);
+        Map<String, dynamic> jsonData = jsonDecode(resBody);
         List<Map<String, dynamic>> resData = List<Map<String, dynamic>>.from(jsonData['results']);
         setState(() {
           deliveryReport = resData;
@@ -98,18 +98,12 @@ class _CheckinScreenState extends State<CheckinScreen> {
         // Show a dialog with the success message and a button to confirm
         _showConfirmationDialog(responseData['message']);
       } else if (res.statusCode == 404) {
-        setState(() {
-          error = "ไม่มีข้อมูลที่ยืนยัน Check In";
-        });
+        _showConfirmationDialog('ไม่มีข้อมูลที่ยืนยัน Check In'); 
       } else {
-        setState(() {
-          error = "เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่";
-        });
+        _showConfirmationDialog('เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่');
       }
     } catch (e) {
-      setState(() {
-        error = "เกิดข้อผิดพลาด ${e} โปรดลองใหม่";
-      });
+      _showConfirmationDialog('เกิดข้อผิดพลาด ${e} โปรดลองใหม่');
     } finally {
       setState(() {
         isLoading = false;

@@ -32,9 +32,9 @@ class _LoadedScreenState extends State<LoadedScreen> {
 
       String apiUri = '${Constants.apiServer}${Constants.ApiPodLoaded}?car_license=${carLicense}';
       final res = await http.get(Uri.parse(apiUri));
-
+      String resBody = utf8.decode(res.bodyBytes);
       if (res.statusCode == 200) {
-        Map<String, dynamic> jsonData = jsonDecode(res.body);
+        Map<String, dynamic> jsonData = jsonDecode(resBody);
         List<Map<String, dynamic>> resData = List<Map<String, dynamic>>.from(jsonData['results']);
         setState(() {
           deliveryReport = resData;
@@ -83,19 +83,14 @@ class _LoadedScreenState extends State<LoadedScreen> {
         Map<String, dynamic> responseData = jsonDecode(res.body);
         // Show a dialog with the success message and a button to confirm
         _showConfirmationDialog(responseData['message']);
-      } else if (res.statusCode == 404) {
-        setState(() {
-          error = "ไม่มีข้อมูลที่ยืนยัน Loaded";
-        });
+      } else if (res.statusCode == 404) {         
+        _showConfirmationDialog('ไม่มีข้อมูลที่ยืนยัน Loaded');
+        
       } else {
-        setState(() {
-          error = "เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่";
-        });
+        _showConfirmationDialog('เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่');
       }
     } catch (e) {
-      setState(() {
-        error = "เกิดข้อผิดพลาด ${e} โปรดลองใหม่";
-      });
+       _showConfirmationDialog('เกิดข้อผิดพลาด ${e} โปรดลองใหม่');
     } finally {
       setState(() {
         isLoading = false;

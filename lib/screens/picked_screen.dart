@@ -29,9 +29,10 @@ class _PickedScreenState extends State<PickedScreen> {
     
     String apiUri = '${Constants.apiServer}${Constants.ApiPodPicked}?car_license=${carLicense}';
     final res =  await http.get(Uri.parse(apiUri));  
+    String resBody = utf8.decode(res.bodyBytes);
     // print(res.body);
     if (res.statusCode == 200) {
-        Map<String, dynamic> jsonData = jsonDecode(res.body);
+        Map<String, dynamic> jsonData = jsonDecode(resBody);
         List<Map<String, dynamic>> resData = List<Map<String, dynamic>>.from(jsonData['results']);
         setState(() {
           deliveryReport = resData;

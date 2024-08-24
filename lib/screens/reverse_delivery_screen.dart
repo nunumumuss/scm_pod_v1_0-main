@@ -1,77 +1,49 @@
-import 'package:fec_corp_app/constants/constants.dart'; 
-import 'package:fec_corp_app/services/auth_service.dart'; 
+import 'dart:io';
+
+import 'package:fec_corp_app/constants/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:grouped_list/grouped_list.dart';
- 
 
-// Define a global variable for user_billno
-String user_billno = '';
-
-class RevDeliveryScreen extends StatefulWidget { // Changed class name to RevDelivery
-  const RevDeliveryScreen({super.key});
+class ReverseDeliveryScreen extends StatefulWidget {
+  const ReverseDeliveryScreen({super.key});
 
   @override
-  State<RevDeliveryScreen> createState() => _RevDeliveryScreenState();
+  State<ReverseDeliveryScreen> createState() => _ReverseDeliveryScreenState();
 }
 
-class _RevDeliveryScreenState extends State<RevDeliveryScreen> {
-  final authService = AuthService();
-  List<dynamic> deliveryReport = [];
+class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
+  final ImagePicker picker = ImagePicker();
   bool isLoading = false;
   String? error;
-  final TextEditingController billNoController = TextEditingController(); // Changed to billNoController
+  List<dynamic> billData = [];
+  XFile? imageFile;
+  String billNo = "กรุณาถ่ายรูปบิล";
+  List<String> inputArray = [];
+  final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  String? selectedReason; // Variable to hold selected reason
 
-  Future<void> getData(String billNo) async { // Changed parameter to billNo
+  Future<void> getData(String billNo) async {
     try {
       setState(() {
         isLoading = true;
       });
 
-      String apiUri = '${Constants.apiServer}${Constants.ApiPodCfDelivery}?bill_no=${billNo}'; // Changed API endpoint
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodCfDelivery}?bill_no=${billNo}';
+      // print(apiUri);
       final res = await http.get(Uri.parse(apiUri));
-
+      String resBody = utf8.decode(res.bodyBytes);
       if (res.statusCode == 200) {
-        Map<String, dynamic> jsonData = jsonDecode(res.body);
+        Map<String, dynamic> jsonData = jsonDecode(resBody);
         List<Map<String, dynamic>> resData = List<Map<String, dynamic>>.from(jsonData['results']);
+        print(res.body);
+        print(resData);
         setState(() {
-          deliveryReport = resData;
+          billData = resData;
         });
-      } else if (res.statusCode == 404) {
-        setState(() {
-          error = "${res.statusCode} ไม่มีข้อมูล";
-        });
-      } else {
-        setState(() {
-          error = "เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        error = "เกิดข้อผิดพลาด โปรดลองใหม่";
-      });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> postCFRVdelivery(String billNo) async { // Changed function name to postCFRVdelivery
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      String apiUri = '${Constants.apiServer}${Constants.ApiPodCfDelivery}?bill_no=${billNo}'; // Changed API endpoint
-      final res = await http.post(Uri.parse(apiUri));
-
-      if (res.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(res.body);
-        // Show a dialog with the success message and a button to confirm
-        _showConfirmationDialog(responseData['message']);
       } else if (res.statusCode == 404) {
         setState(() {
           error = "ไม่มีข้อมูล";
@@ -91,7 +63,36 @@ class _RevDeliveryScreenState extends State<RevDeliveryScreen> {
       });
     }
   }
+   
+  Future<void> postRvDelivery(String billNo, String reason) async { // Accept a list of shipment IDs
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
+      String apiUri = '${Constants.apiServer}${Constants.ApiPodRvDelivery}?bill_no=${billNo}&remark=${reason} '; // Make sure to include the correct base URL
+      print(apiUri);
+      // Send the POST request
+      final res = await http.post(Uri.parse(apiUri));          
+
+      if (res.statusCode == 200) {
+        Map<String, dynamic> responseData = jsonDecode(res.body);
+        // Show a dialog with the success message and a button to confirm
+        _showConfirmationDialog(responseData['message']);
+      } else if (res.statusCode == 404) {         
+        _showConfirmationDialog('ไม่มีข้อมูลที่ยืนยัน Loaded');
+        
+      } else {
+        _showConfirmationDialog('เกิดข้อผิดพลาด ${res.statusCode} โปรดลองใหม่');
+      }
+    } catch (e) {
+       _showConfirmationDialog('เกิดข้อผิดพลาด ${e} โปรดลองใหม่');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
   void _showConfirmationDialog(String message) {
     showDialog(
       context: context,
@@ -104,120 +105,229 @@ class _RevDeliveryScreenState extends State<RevDeliveryScreen> {
               onPressed: () {
                 Get.offAllNamed('/home'); // Clear stack and go to home
               },
-              child: const Text('ยืนยัน'),
+              child: const Text('ฺBack to home'),
             ),
           ],
         );
       },
     );
   }
+  // Function to show an error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('ข้อผิดพลาด'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('ตกลง'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void findMatches() {
+    billNo = "";
+    RegExp regExp = RegExp(r'81\d{8}');
+    for (var input in inputArray) {
+      Iterable<RegExpMatch> regExpMatches = regExp.allMatches(input);
+      for (var match in regExpMatches) {
+        setState(() {
+          billNo = "${match.group(0)}";          
+        });
+      }
+    }
+    if (billNo != ""){
+      
+      getData(billNo.trim()); 
+      print(billData);
+    }
+    print(billNo);
+  }
+
+  takePhoto() async {
+    // var photo = await picker.pickImage(source: ImageSource.camera);
+    var photo = await picker.pickImage(source: ImageSource.gallery);
+    if (photo != null) {
+      // read text from image
+      final inputImage = InputImage.fromFilePath(photo.path);
+      final textResult = await textRecognizer.processImage(inputImage);
+
+      inputArray.clear();
+      // print('textResult: ${textResult.text}');
+      for (TextBlock block in textResult.blocks) {
+        inputArray.add(block.text);
+      }
+
+      findMatches();
+
+      setState(() {
+        imageFile = photo;
+      });
+    }
+  }
 
   @override
-  void initState() {     
-    super.initState();
-    // Removed user login info dependency
-    // Uncomment the following line if you want to call getData() with a predefined bill number for testing.
-    // getData('example_bill_number');  
+  void dispose() {
+    textRecognizer.close();
+    super.dispose();
+  }
+
+  Widget previewImage() {
+    if (imageFile != null) {
+      return Center(
+        child: Image.file(
+          File(imageFile!.path),
+          fit: BoxFit.fill,
+          width: double.infinity,
+          height: double.infinity,
+          alignment: Alignment.center,
+        ),
+      );
+    } else {
+      return const Center(
+        child: Text('แสดงตัวอย่างภาพที่นี่'),
+      );
+    }
+  }
+
+  Future<void> uploadImageToServer() async {
+    // convert jpg to base64
+    final bytesImage = await File(imageFile!.path).readAsBytes();
+    var base64Image = base64Encode(bytesImage);
+
+    // upload base64image to server
+    var url = Uri.parse('https://api.codingthailand.com/api/upload');
+    var response = await http.post(url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'picture': 'data:image/jpeg;base64,$base64Image'}));
+    if (response.statusCode == 200) {
+      var responseMsg = json.decode(response.body);
+      print(responseMsg['data']);
+      Get.snackbar('ผลการทำงาน', '${responseMsg['data']['message']}',
+          backgroundColor: Colors.green);
+      setState(() {
+        imageFile = null;
+        billNo = "init";
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (error != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Message Alert'),
-          backgroundColor: Colors.red.shade400,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(' $error'),
-              ElevatedButton(
-                onPressed: () {
-                  Get.back();
-                }, 
-                child: const Text('Back to home'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: deliveryReport.isEmpty 
-          ? const Text('รอขึ้นสินค้าสำเร็จ') 
-          : Text('รอขึ้นสินค้าสำเร็จ ${deliveryReport.length} รายการ'),
+        title: const Text('Reverse Delivery'),
         backgroundColor: Colors.red.shade400,
+        // actions: [
+        //   IconButton(
+        //       onPressed: () async {
+        //         if (imageFile != null) {
+        //           await uploadImageToServer();
+        //         }
+        //       },
+        //       icon: const Icon(Icons.upload_file_rounded)),
+        // ],
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: billNoController, // Input for bill number
-                  decoration: const InputDecoration(
-                    labelText: 'กรุณากรอกหมายเลขบิล',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GroupedListView<dynamic, String>(
-                  elements: deliveryReport,
-                  groupBy: (element) => element['ship_point'],
-                  groupSeparatorBuilder: (String groupByValue) => Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      'คลังสินค้า: $groupByValue', 
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  itemBuilder: (context, dynamic element) => Card(
-                    elevation: 8.0,
-                    margin: const EdgeInsets.all(5.0),
-                    child: ListTile(
-                      leading: const Icon(Icons.newspaper),
-                      title: Text('Shipment No.: ${element['shipid']}'),
-                      trailing: Text('หน้าท่า: ${element['dock_no']}'),
-                      subtitle: Text(element['province']),
-                    ), 
-                  ),
-                  useStickyGroupSeparators: true,
-                  order: GroupedListOrder.DESC,
-                ),
-              ),
-            ],
-          ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
+ 
+       body: Column(
         children: [
-          const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  // Call getData with the input bill number when the button is pressed
-                  String billNo = billNoController.text.trim();
-                  if (billNo.isNotEmpty) {
-                    getData(billNo); // Fetch data using the input bill number
-                  } else {
-                    // Handle empty input if needed
-                    Get.snackbar('Error', 'กรุณากรอกหมายเลขบิล'); // Show error message
-                  }
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await takePhoto();
                 },
-                child: const Text('ยกเลิกการยืนยันส่งสินค้าสำเร็จ'),
+                icon: const Icon(Icons.camera_alt_rounded),
+                label: const Text('ถ่ายภาพเลขที่บิลสินค้า'),
               ),
             ],
           ),
+          const Divider(),
+          // Display the bill data
+          billNo == ""
+              ? const Expanded(child: Text("ไม่สามารถอ่าน Bill no ได้"))
+              : billData.isNotEmpty 
+                ?Expanded(
+                  flex: 8,
+                  child: Column(
+                    children: [ 
+                      Text('Bill No: ${billData[0]["billno"]}'),
+                      Text('Customer Name: ${billData[0]["cusname"]}'),
+                      Text('Load Status: ${billData[0]["load_stat"]}'), 
+                      Text('Confirmation Date: ${billData[0]["cfdate"]}'),
+                      Text(
+                          'Delivery Status: ${billData[0]["do_stat"]}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold, // Set font to bold
+                            color: Color.fromARGB(255, 228, 14, 7), // Change to your desired color
+                          ),
+                      ),
+                      Text('Confirmation Date: ${billData[0]["cddate"]}'),
+                      const Text(
+                          'สถานะการส่งสินค้าต้องเป็น Deliveried เท่านั้น จึงจะยกเลิกได้',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, // Set font to bold
+                            color: Color.fromARGB(255, 228, 14, 7), // Change to your desired color
+                          ),
+                      ),
+                      // Text('สถานะการส่งสินค้าต้องเป็น Deliveried เท่านั้น จุึงจะยกเลิกได้'),
+                      // Show button if Delivery Status is 'Deliveried'
+                      const Divider(),
+                      if (billData[0]["do_stat"] == 'Deliveried') 
+                        
+                        Column(
+                          children: [
+                            DropdownButton<String>(
+                            hint: const Text('เลือกเหตุผล'),
+                            value: selectedReason,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedReason = newValue;
+                              });
+                            },
+                            items: <String>['กดผิด', 'บิลผิด', 'อื่นๆ']
+                                .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                          ),
+                            const SizedBox(height: 10), // Add spacing
+                            ElevatedButton(
+                              onPressed: () {
+                                if (selectedReason != null) {
+                                  postRvDelivery(billNo,selectedReason!); // Call the API when the button is pressed
+                                  print('Reason for cancellation: $selectedReason');
+                                } else {
+                                  // Show an error message if no reason is selected
+                                  _showErrorDialog('กรุณาเลือกเหตุผล');
+                                }
+                                
+                              },
+                              child: const Text('ยกเลิกสถานะการส่งสินค้า'),
+                            ),
+                          ],
+                        ),                       
+                    ],
+                  ),
+                )
+              : Expanded(child: Text('ไม่มีข้อมูล Bill No:$billNo')),
+          // Preview Image
+          // Expanded(
+          //   flex: 8,
+          //   child: previewImage(),
+          // ),
         ],
-      ),    
+      ),
     );
   }
 }
