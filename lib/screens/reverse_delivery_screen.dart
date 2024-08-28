@@ -271,6 +271,7 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                           ),
                       ),
                       Text('Confirmation Date: ${billData[0]["cddate"]}'),
+                      Text('Remark: ${billData[0]["rem"]}'),
                       const Text(
                           'สถานะการส่งสินค้าต้องเป็น Deliveried เท่านั้น จึงจะยกเลิกได้',
                           style: TextStyle(

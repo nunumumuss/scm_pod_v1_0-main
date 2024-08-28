@@ -192,6 +192,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.newspaper),
                     title: Text('ระยะห่างระหว่างคลังสินค้า : ${element['distance']}'),  
+                    subtitle: Text('รอ Check In : ${element['checkin']} shipments'),  
                   ), 
                 ),
                 useStickyGroupSeparators: true,
