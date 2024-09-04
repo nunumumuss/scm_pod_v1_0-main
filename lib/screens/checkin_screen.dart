@@ -214,7 +214,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   margin: const EdgeInsets.all(5.0),
                   child: ListTile(
                     leading: const Icon(Icons.newspaper),
-                    title: Text('Shipment No.: ${element['shipid']}'),
+                    title: Text('Shipment No.: ${element['shipid']}  ${element['pick_stat']}'),
                     trailing: Text('หน้าท่า: ${element['dock_no']}'),
                     subtitle: Text(element['province']),
                   ), 

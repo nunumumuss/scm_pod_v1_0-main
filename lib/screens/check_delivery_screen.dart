@@ -95,7 +95,8 @@ class _CheckDeliveryScreenState extends State<CheckDeliveryScreen> {
     return Scaffold(
       appBar: AppBar(
         title:  deliveryReport.isEmpty ? const Text('สถานะการส่งสินค้า') : 
-        Text('สถานะการส่งสินค้า ${deliveryReport.length} รายการ'),
+        Text('สถานะการส่งสินค้า ${deliveryReport.length} รายการ'),        
+        backgroundColor: Colors.red.shade400,
       ),
       body: isLoading ? 
             const Center(
@@ -103,7 +104,7 @@ class _CheckDeliveryScreenState extends State<CheckDeliveryScreen> {
             )
            : GroupedListView<dynamic, String>(
             elements: deliveryReport,
-            groupBy: (element) => element['shipid'],
+            groupBy: (element) => element['shipid']+' ' + element['load_stat'],
             groupSeparatorBuilder: (String groupByValue) => Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(

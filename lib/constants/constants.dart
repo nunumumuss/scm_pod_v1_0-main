@@ -1,6 +1,7 @@
 class Constants {
   // static const String apiServer = 'http://192.168.1.105:8000/';
-  static const String apiServer = 'http://180.128.9.83:8000/';
+  // static const String apiServer = 'http://180.128.9.83:8000/';
+  static const String apiServer = 'http://10.1.1.18:8000/';
   // API Endpoints
   static const String ApiPodCheckin     = 'pod_checkin'; 
   static const String ApiPodWarehouse   = 'pod_warehouse';

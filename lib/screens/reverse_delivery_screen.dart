@@ -152,8 +152,8 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
   }
 
   takePhoto() async {
-    var photo = await picker.pickImage(source: ImageSource.camera);
-    // var photo = await picker.pickImage(source: ImageSource.gallery);
+    // var photo = await picker.pickImage(source: ImageSource.camera);
+    var photo = await picker.pickImage(source: ImageSource.gallery);
     if (photo != null) {
       // read text from image
       final inputImage = InputImage.fromFilePath(photo.path);
@@ -273,16 +273,16 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                       Text('Confirmation Date: ${billData[0]["cddate"]}'),
                       Text('Remark: ${billData[0]["rem"]}'),
                       const Text(
-                          'สถานะการส่งสินค้าต้องเป็น Deliveried เท่านั้น จึงจะยกเลิกได้',
+                          'สถานะการส่งสินค้าต้องเป็น Delivered เท่านั้น จึงจะยกเลิกได้',
                           style: TextStyle(
                             fontWeight: FontWeight.bold, // Set font to bold
                             color: Color.fromARGB(255, 228, 14, 7), // Change to your desired color
                           ),
                       ),
-                      // Text('สถานะการส่งสินค้าต้องเป็น Deliveried เท่านั้น จุึงจะยกเลิกได้'),
-                      // Show button if Delivery Status is 'Deliveried'
+                      // Text('สถานะการส่งสินค้าต้องเป็น Delivered เท่านั้น จุึงจะยกเลิกได้'),
+                      // Show button if Delivery Status is 'Delivered'
                       const Divider(),
-                      if (billData[0]["do_stat"] == 'Deliveried') 
+                      if (billData[0]["do_stat"] == 'Delivered') 
                         
                         Column(
                           children: [
