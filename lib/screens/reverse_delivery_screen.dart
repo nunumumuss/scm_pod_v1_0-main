@@ -283,8 +283,7 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                       // Text('สถานะการส่งสินค้าต้องเป็น Delivered เท่านั้น จุึงจะยกเลิกได้'),
                       // Show button if Delivery Status is 'Delivered'
                       const Divider(),
-                      if (billData[0]["do_stat"] == 'Delivered') 
-                        
+                      if (billData[0]["do_stat"] == 'Delivered')                         
                         Column(
                           children: [
                             DropdownButton<String>(
@@ -334,7 +333,7 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                 flex: 8,
                 child: previewImage()
               ),
-              const Divider(),
+              // const Divider(),
           // Preview Image
           // Expanded(
           //   flex: 8,
