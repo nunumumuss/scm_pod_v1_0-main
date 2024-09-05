@@ -238,7 +238,14 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   .toList();
                   postCfcheckin(shipmentIds); // Call the API when the button is pressed
                   },
-                  child: const Text('ยืนยัน Check In'),
+                  style: ElevatedButton.styleFrom(
+                        // foregroundColor: Colors.white, backgroundColor: Colors.red)), // text color
+                        foregroundColor: Colors.white, 
+                        backgroundColor: Colors.red, // text color
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      child: const Text('ยืนยัน Check In'),
                 ),
             ],
           ),

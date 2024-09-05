@@ -199,7 +199,14 @@ class _LoadedScreenState extends State<LoadedScreen> {
                   .toList();
                   postCfloaded(shipmentIds); // Call the API when the button is pressed
                 },
-                child: const Text('ยืนยันขึ้นสินค้าสำเร็จ.'),
+                style: ElevatedButton.styleFrom(
+                        // foregroundColor: Colors.white, backgroundColor: Colors.red)), // text color
+                        foregroundColor: Colors.white, 
+                        backgroundColor:  Colors.red, // text color
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                child: const Text('ยืนยันขึ้นสินค้าสำเร็จ'),
               ),
             ],
           ),

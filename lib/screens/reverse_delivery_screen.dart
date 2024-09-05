@@ -178,6 +178,7 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
     textRecognizer.close();
     super.dispose();
   }
+ 
 
   Widget previewImage() {
     if (imageFile != null) {
@@ -261,16 +262,16 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                     children: [ 
                       Text('Bill No: ${billData[0]["billno"]}'),
                       Text('Customer Name: ${billData[0]["cusname"]}'),
-                      Text('Load Status: ${billData[0]["load_stat"]}'), 
-                      Text('Confirmation Date: ${billData[0]["cfdate"]}'),
+                      Text('Load Status: ${billData[0]["load_stat"]}  ${billData[0]["cfdate"]}'), 
+                      // Text('Confirmation Date: ${billData[0]["cfdate"]}'),
                       Text(
-                          'Delivery Status: ${billData[0]["do_stat"]}',
+                          'Delivery Status: ${billData[0]["do_stat"]} ${billData[0]["cddate"]}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold, // Set font to bold
                             color: Color.fromARGB(255, 228, 14, 7), // Change to your desired color
                           ),
                       ),
-                      Text('Confirmation Date: ${billData[0]["cddate"]}'),
+                      // Text('Confirmation Date: ${billData[0]["cddate"]}'),
                       Text('Remark: ${billData[0]["rem"]}'),
                       const Text(
                           'สถานะการส่งสินค้าต้องเป็น Delivered เท่านั้น จึงจะยกเลิกได้',
@@ -314,7 +315,14 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                                 }
                                 
                               },
-                              child: const Text('ยกเลิกสถานะการส่งสินค้า'),
+                              // child: const Text('ยกเลิกสถานะการส่งสินค้า'),
+                              style: ElevatedButton.styleFrom(
+                                // foregroundColor: Colors.white, backgroundColor: Colors.red)), // text color
+                                foregroundColor: Colors.white, 
+                                backgroundColor:  Colors.red, // text color
+                                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                                textStyle: const TextStyle(fontSize: 18),
+                              ), child: const Text('ยกเลิกสถานะการส่งสินค้า')
                             ),
                           ],
                         ),                       
@@ -322,6 +330,11 @@ class _ReverseDeliveryScreenState extends State<ReverseDeliveryScreen> {
                   ),
                 )
               : Expanded(child: Text('ไม่มีข้อมูล Bill No:$billNo')),
+              Expanded(
+                flex: 8,
+                child: previewImage()
+              ),
+              const Divider(),
           // Preview Image
           // Expanded(
           //   flex: 8,

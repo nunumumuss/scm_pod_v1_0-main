@@ -41,8 +41,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
   }
 
   takePhoto() async {
-    // var photo = await picker.pickImage(source: ImageSource.camera);
-    var photo = await picker.pickImage(source: ImageSource.gallery);
+    var photo = await picker.pickImage(source: ImageSource.camera);
+    // var photo = await picker.pickImage(source: ImageSource.gallery);
     if (photo != null) {
       // read text from image
       final inputImage = InputImage.fromFilePath(photo.path);
